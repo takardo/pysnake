@@ -9,8 +9,8 @@ import sys
 import os
 
 SNAKE_CHAR = '██'
-APPLE_CHAR = '██'
-OBSTACLE_CHAR = 'XX'
+APPLE_CHAR = '🍎'
+OBSTACLE_CHAR = '💣'
 SEGMENT_WIDTH = 2
 SOUND_CMD = ['paplay', '/usr/share/sounds/freedesktop/stereo/bell.oga']
 LEADERBOARD_FILE = "leaderboard.txt"
@@ -167,6 +167,12 @@ def draw_leaderboard(stdscr, start_y, sw):
         stdscr.addstr(start_y + i + 1, sw // 2 - len(line)//2, line)
 
 def title_screen(stdscr, sound_on):
+    curses.curs_set(0)
+    stdscr.nodelay(True)
+    stdscr.keypad(True)
+    stdscr.clear()
+    stdscr.refresh()
+
     sh, sw = stdscr.getmaxyx()
     init_colors()
 
@@ -195,7 +201,10 @@ def title_screen(stdscr, sound_on):
     for _ in range(10):
         demo_apples.append(make_demo_apple(demo_snake + demo_apples))
 
-    stdscr.nodelay(True)
+    demo_obstacles = []
+    while len(demo_obstacles) < 3:
+        pos = random_empty_position(sh, sw, demo_snake, [a[:2] for a in demo_apples], demo_obstacles)
+        demo_obstacles.append(pos)
 
     while True:
         key = stdscr.getch()
@@ -218,7 +227,8 @@ def title_screen(stdscr, sound_on):
         collision = (
             head in demo_snake or
             head[0] <= 0 or head[0] >= sh - 1 or
-            head[1] <= 0 or head[1] > sw - SEGMENT_WIDTH - 1
+            head[1] <= 0 or head[1] > sw - SEGMENT_WIDTH - 1 or
+            head in demo_obstacles
         )
         if collision:
             demo_dir_vec = (-demo_dir_vec[0], -demo_dir_vec[1])
@@ -243,6 +253,11 @@ def title_screen(stdscr, sound_on):
             stdscr.attron(curses.color_pair(20 + color))
             stdscr.addstr(y, x, APPLE_CHAR)
             stdscr.attroff(curses.color_pair(20 + color))
+
+        stdscr.attron(curses.color_pair(30))
+        for y, x in demo_obstacles:
+            stdscr.addstr(y, x, OBSTACLE_CHAR)
+        stdscr.attroff(curses.color_pair(30))
 
         stdscr.attron(curses.color_pair(15))
         for y, x in demo_snake:
@@ -438,17 +453,12 @@ def run_game(stdscr, sound_on_initial=True):
             stdscr.border()
             stdscr.attroff(curses.color_pair(10))
 
-            stdscr.addstr(0, left_pos, score_str)
-            stdscr.addstr(0, center_pos, time_str)
-            stdscr.addstr(0, right_pos, controls_str)
-
             for apple in apples:
                 y, x = apple['pos']
-                color = apple['color']
-                curses.init_pair(20 + color, color, -1)
-                stdscr.attron(curses.color_pair(20 + color))
+                curses.init_pair(50 + apple['color'], apple['color'], -1)
+                stdscr.attron(curses.color_pair(50 + apple['color']))
                 stdscr.addstr(y, x, APPLE_CHAR)
-                stdscr.attroff(curses.color_pair(20 + color))
+                stdscr.attroff(curses.color_pair(50 + apple['color']))
 
             stdscr.attron(curses.color_pair(30))
             for y, x in obstacles:
@@ -460,52 +470,34 @@ def run_game(stdscr, sound_on_initial=True):
                 stdscr.addstr(y, x, SNAKE_CHAR)
             stdscr.attroff(curses.color_pair(10))
 
+            stdscr.addstr(0, left_pos, score_str)
+            stdscr.addstr(0, center_pos, time_str)
+            stdscr.addstr(0, right_pos, controls_str)
+
             stdscr.refresh()
 
-        time.sleep(0.001)
+        time.sleep(0.01)
 
 def main(stdscr):
+    curses.curs_set(0)
     sound_on = True
-    show_title = True
 
     while True:
-        if show_title:
-            sound_on = title_screen(stdscr, sound_on)
+        sound_on = title_screen(stdscr, sound_on)
+        score, elapsed, sound_on, quit_game = run_game(stdscr, sound_on)
+        if quit_game:
+            break
 
-        score, elapsed, sound_on, quit_by_user = run_game(stdscr, sound_on_initial=sound_on)
-
-        sh, sw = stdscr.getmaxyx()
         stdscr.nodelay(False)
-        stdscr.clear()
-        msg = f" Game Over! Score: {score}  Time: {elapsed}s "
-        stdscr.addstr(sh // 2, sw // 2 - len(msg) // 2, msg)
+        name = ask_name(stdscr)
 
-        leaderboard = load_leaderboard()
-        test_entries = leaderboard + [("You", score, elapsed)]
-        test_entries.sort(key=lambda x: (-x[1], x[2]))
-        if ("You", score, elapsed) in test_entries[:MAX_LEADERBOARD_ENTRIES] and score > 0 and not quit_by_user:
-            name = ask_name(stdscr)
-            add_score_to_leaderboard(name, score, elapsed)
+        add_score_to_leaderboard(name, score, elapsed)
 
-
-        stdscr.addstr(sh // 2 + 1, sw // 2 - 15, " Press (r)etry or (q)uit ")
-        stdscr.refresh()
-
-        while True:
-            key = stdscr.getch()
-            if key == ord('r'):
-                show_title = False
-                break
-            elif key == ord('q'):
-                show_title = True
-                break
-            elif key == 27:
-                return
+    stdscr.clear()
+    stdscr.addstr(0, 0, "Thanks for playing! Press any key to exit...")
+    stdscr.refresh()
+    stdscr.getch()
 
 if __name__ == "__main__":
-    def signal_handler(sig, frame):
-        sys.exit(0)
-    signal.signal(signal.SIGINT, signal_handler)
-
+    signal.signal(signal.SIGINT, lambda sig, frame: sys.exit(0))
     curses.wrapper(main)
-
