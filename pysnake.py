@@ -9,8 +9,9 @@ import sys
 import os
 
 SNAKE_CHAR = '██'
-APPLE_CHAR = '██'
-OBSTACLE_CHAR = 'XX'
+APPLE_CHAR = '🍏'
+SPECIAL_APPLE_CHAR = '🍎'
+OBSTACLE_CHAR = '💣'
 SEGMENT_WIDTH = 2
 SOUND_CMD = ['paplay', '/usr/share/sounds/freedesktop/stereo/bell.oga']
 LEADERBOARD_FILE = "leaderboard.txt"
@@ -287,6 +288,9 @@ def title_screen(stdscr, sound_on):
 
     return sound_on
 
+SPECIAL_APPLE_CHAR = '🍎'
+SPECIAL_APPLE_COLOR = curses.COLOR_YELLOW  # special apple color
+
 def run_game(stdscr, sound_on_initial=True):
     sh, sw = stdscr.getmaxyx()
     if sw < 20 or sh < 10:
@@ -305,7 +309,7 @@ def run_game(stdscr, sound_on_initial=True):
     stdscr.nodelay(True)
 
     base_delay = 0.2
-    min_delay = 0.016
+    min_delay = 0.032
 
     direction = random.choice(list(DIRECTIONS.keys()))
     dir_vec = DIRECTIONS[direction]
@@ -326,14 +330,18 @@ def run_game(stdscr, sound_on_initial=True):
     obstacles = []
 
     def get_apple_count(score):
-        if 1 <= score <= 10:
-            return 1
-        elif 11 <= score <= 20:
-            return 2
-        elif 21 <= score <= 30:
-            return 3
+        if score >= 51:
+            return 6
+        elif score >= 41:
+            return 5
         elif score >= 31:
             return 4
+        elif 21 <= score <= 30:
+            return 3
+        elif 11 <= score <= 20:
+            return 2
+        elif 1 <= score <= 10:
+            return 1
         else:
             return 1
 
@@ -349,15 +357,37 @@ def run_game(stdscr, sound_on_initial=True):
         apple_count = get_apple_count(score)
         obstacle_count = get_obstacle_count(score)
 
-        while len(apples) > apple_count:
-            apples.pop()
-        while len(apples) < apple_count:
+        # Remove excess normal apples (not special)
+        normal_apples = [a for a in apples if not a.get('special', False)]
+        while len(normal_apples) > apple_count:
+            for i in range(len(apples) - 1, -1, -1):
+                if not apples[i].get('special', False):
+                    apples.pop(i)
+                    break
+            normal_apples = [a for a in apples if not a.get('special', False)]
+
+        # Add normal apples to meet count
+        while len(normal_apples) < apple_count:
             pos = random_empty_position(sh, sw, snake, [a['pos'] for a in apples], obstacles)
             color = random_color()
             apples.append({'pos': pos, 'color': color})
+            normal_apples = [a for a in apples if not a.get('special', False)]
 
+        # Spawn special apple every 21 points if none present
+        special_exists = any(a.get('special', False) for a in apples)
+        if score != 0 and score % 21 == 0 and not special_exists:
+            # Remove one normal apple to replace with special apple
+            for i in range(len(apples)):
+                if not apples[i].get('special', False):
+                    apples.pop(i)
+                    break
+            pos = random_empty_position(sh, sw, snake, [a['pos'] for a in apples], obstacles)
+            apples.append({'pos': pos, 'color': SPECIAL_APPLE_COLOR, 'special': True})
+
+        # Remove excess obstacles
         while len(obstacles) > obstacle_count:
             obstacles.pop()
+        # Add obstacles to meet count
         while len(obstacles) < obstacle_count:
             pos = random_empty_position(sh, sw, snake, [a['pos'] for a in apples], obstacles)
             obstacles.append(pos)
@@ -417,10 +447,14 @@ def run_game(stdscr, sound_on_initial=True):
                     break
 
             if ate_apple_idx is not None:
-                score += 1
+                apple = apples.pop(ate_apple_idx)
+                if apple.get('special', False):
+                    score += 2
+                else:
+                    score += 1
                 if sound_on:
                     play_sound()
-                apples.pop(ate_apple_idx)
+
                 pos = random_empty_position(sh, sw, snake, [a['pos'] for a in apples], obstacles)
                 color = random_color()
                 apples.append({'pos': pos, 'color': color})
@@ -457,10 +491,12 @@ def run_game(stdscr, sound_on_initial=True):
 
             for apple in apples:
                 y, x = apple['pos']
-                curses.init_pair(20 + apple['color'], apple['color'], -1)
-                stdscr.attron(curses.color_pair(20 + apple['color']))
-                stdscr.addstr(y, x, APPLE_CHAR)
-                stdscr.attroff(curses.color_pair(20 + apple['color']))
+                color = apple['color']
+                curses.init_pair(20 + color, color, -1)
+                stdscr.attron(curses.color_pair(20 + color))
+                char = SPECIAL_APPLE_CHAR if apple.get('special', False) else APPLE_CHAR
+                stdscr.addstr(y, x, char)
+                stdscr.attroff(curses.color_pair(20 + color))
 
             stdscr.attron(curses.color_pair(30))
             for y, x in obstacles:
@@ -475,6 +511,7 @@ def run_game(stdscr, sound_on_initial=True):
             stdscr.refresh()
 
         time.sleep(0.01)
+
 
 def main(stdscr):
     sound_on = True
