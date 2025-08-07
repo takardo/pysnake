@@ -39,4 +39,4 @@ A Snake game written in Python using `curses`. Dynamic difficulty, sound effects
 
 ---
 
-- Made by Takardo
+- Made by takardo
