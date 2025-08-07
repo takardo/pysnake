@@ -2,7 +2,7 @@
 
 # 🐍 Terminal Snake Game
 
-A colorful, interactive Snake game written in Python using the `curses` module. Features dynamic difficulty, sound effects, a persistent leaderboard, and a retro-style animated title screen.
+A Snake game written in Python using the `curses`. Dynamic difficulty, sound effects, a persistent leaderboard and an animated title screen.
 
 ## 🧩 Features
 
