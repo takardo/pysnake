@@ -282,7 +282,8 @@ def title_screen(stdscr, sound_on):
         stdscr.attroff(curses.color_pair(7))
 
         draw_leaderboard(stdscr, start_y + figlet_height + 8, sw)
-
+        made_by = "made by: takardo"
+        stdscr.addstr(sh - 1, sw - len(made_by) - 1, made_by)
         stdscr.refresh()
         time.sleep(0.15)
 
