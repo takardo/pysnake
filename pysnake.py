@@ -493,7 +493,7 @@ def main(stdscr):
         stdscr.nodelay(False)
         sh, sw = stdscr.getmaxyx()
         msg = "GAME OVER"
-        sub_msg = "Press Q to return to title or any other key to retry"
+        sub_msg = "(Q)uit to title or (R)etry"
         stdscr.attron(curses.A_BOLD)
         stdscr.addstr(sh // 2 - 1, sw // 2 - len(msg) // 2, msg)
         stdscr.attroff(curses.A_BOLD)
