@@ -25,6 +25,14 @@ A colorful, interactive Snake game written in Python using the `curses` module. 
 - `figlet` with the `standard.flf` font
 - `paplay` (PulseAudio utility for sound)
 
+## 🏃Run
+
+- The game can be run with the python file by executing python3 pysnake.py
+
 ## 🛠️ Building
 
 - Install pyinstaller and run this from the root folder. The binary will be in the dist folder when complte. <pre> ```pyinstaller --onefile --add-data "leaderboard.txt:." pysnake.py ``` </pre>
+
+## 💾 Installing
+
+- After building the binary, install to ~/.local/bin and run <pre> ``` pysnake ``` </pre> from terminal.
