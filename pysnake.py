@@ -445,7 +445,9 @@ def run_game(stdscr, sound_on_initial=True):
             center_pos = (sw - len(time_str)) // 2
 
             stdscr.erase()
+            stdscr.attron(curses.color_pair(10))  # border same color as snake
             stdscr.border()
+            stdscr.attroff(curses.color_pair(10))
 
             stdscr.attron(curses.color_pair(10) | curses.A_BOLD)
             stdscr.addstr(0, left_pos, score_str)
