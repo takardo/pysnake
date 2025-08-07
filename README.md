@@ -1,4 +1,4 @@
-![Screenshot](assets/pysnake_screenshot.png)
+![Screenshot](assets/pysnake.png)
 
 # 🐍 Terminal Snake Game
 
