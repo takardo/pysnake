@@ -186,7 +186,6 @@ def title_screen(stdscr, sound_on):
     demo_dir_vec = DIRECTIONS[demo_direction]
     demo_snake = initialize_snake(sh, sw, demo_direction, length=5)
 
-    # Add 4 obstacles randomly placed, avoiding snake and apples
     demo_obstacles = []
 
     def make_demo_apple(snake_and_apples_and_obstacles):
@@ -381,7 +380,7 @@ def run_game(stdscr, sound_on_initial=True):
                     dir_vec = new_dir
                 speed_boost = True
             elif key in (ord('q'), 27):
-                return score, int(now - start_time), sound_on, True
+                return score, int(now - start_time), sound_on, None
         else:
             speed_boost = False
 
@@ -402,11 +401,12 @@ def run_game(stdscr, sound_on_initial=True):
             last_move_time = now
             head = [snake[0][0] + dir_vec[0], snake[0][1] + dir_vec[1]]
 
+            # Check collision with self, borders, obstacles
             if (head in snake or
                 head[0] <= 0 or head[0] >= sh - 1 or
                 head[1] <= 0 or head[1] > sw - SEGMENT_WIDTH - 1 or
                 head in obstacles):
-                return score, int(now - start_time), sound_on, False
+                return score, int(now - start_time), sound_on, True  # Game over
 
             snake.insert(0, head)
 
@@ -481,11 +481,30 @@ def main(stdscr):
     curses.curs_set(0)
     while True:
         sound_on = title_screen(stdscr, sound_on)
-        score, elapsed, sound_on, quit_game = run_game(stdscr, sound_on)
-        if quit_game:
-            break
-        name = ask_name(stdscr)
-        add_score_to_leaderboard(name, score, elapsed)
+        score, elapsed, sound_on, game_over = run_game(stdscr, sound_on)
+
+        # Only ask for name if the player lost (not quit)
+        if game_over is True:
+            name = ask_name(stdscr)
+            add_score_to_leaderboard(name, score, elapsed)
+
+        # Always show the Game Over screen
+        stdscr.clear()
+        stdscr.nodelay(False)
+        sh, sw = stdscr.getmaxyx()
+        msg = "GAME OVER"
+        sub_msg = "Press Q to return to title or any other key to retry"
+        stdscr.attron(curses.A_BOLD)
+        stdscr.addstr(sh // 2 - 1, sw // 2 - len(msg) // 2, msg)
+        stdscr.attroff(curses.A_BOLD)
+        stdscr.addstr(sh // 2 + 1, sw // 2 - len(sub_msg) // 2, sub_msg)
+        stdscr.refresh()
+
+        key = stdscr.getch()
+        if key in (ord('q'), 27):
+            continue  # Go back to title screen
+        else:
+            continue  # Restart game
 
 if __name__ == '__main__':
     signal.signal(signal.SIGINT, lambda s, f: sys.exit(0))
