@@ -329,6 +329,8 @@ def run_game(stdscr, sound_on_initial=True):
     apples = []
     obstacles = []
 
+    grow_segments = 0  # <--- Initialize grow_segments here
+
     def get_apple_count(score):
         if score >= 51:
             return 6
@@ -376,21 +378,15 @@ def run_game(stdscr, sound_on_initial=True):
         # Spawn special apple every 21 points if none present
         special_exists = any(a.get('special', False) for a in apples)
         if score != 0 and score % 21 == 0 and not special_exists:
-            # Remove one normal apple to replace with special apple
-            for i in range(len(apples)):
-                if not apples[i].get('special', False):
-                    apples.pop(i)
-                    break
             pos = random_empty_position(sh, sw, snake, [a['pos'] for a in apples], obstacles)
             apples.append({'pos': pos, 'color': SPECIAL_APPLE_COLOR, 'special': True})
 
-        # Remove excess obstacles
         while len(obstacles) > obstacle_count:
             obstacles.pop()
-        # Add obstacles to meet count
         while len(obstacles) < obstacle_count:
             pos = random_empty_position(sh, sw, snake, [a['pos'] for a in apples], obstacles)
             obstacles.append(pos)
+
 
     spawn_apples_and_obstacles()
 
@@ -425,7 +421,7 @@ def run_game(stdscr, sound_on_initial=True):
 
         current_delay = max(min_delay, base_delay - (score // 5) * 0.01)
         if speed_boost:
-            current_delay /= 2
+            current_delay /= 3
 
         if now - last_move_time >= current_delay:
             last_move_time = now
@@ -450,8 +446,10 @@ def run_game(stdscr, sound_on_initial=True):
                 apple = apples.pop(ate_apple_idx)
                 if apple.get('special', False):
                     score += 2
+                    grow_segments += 2
                 else:
                     score += 1
+                    grow_segments += 1
                 if sound_on:
                     play_sound()
 
@@ -460,6 +458,9 @@ def run_game(stdscr, sound_on_initial=True):
                 apples.append({'pos': pos, 'color': color})
 
                 spawn_apples_and_obstacles()
+
+            if grow_segments > 0:
+                grow_segments -= 1
             else:
                 snake.pop()
 
@@ -491,12 +492,10 @@ def run_game(stdscr, sound_on_initial=True):
 
             for apple in apples:
                 y, x = apple['pos']
-                color = apple['color']
-                curses.init_pair(20 + color, color, -1)
-                stdscr.attron(curses.color_pair(20 + color))
-                char = SPECIAL_APPLE_CHAR if apple.get('special', False) else APPLE_CHAR
-                stdscr.addstr(y, x, char)
-                stdscr.attroff(curses.color_pair(20 + color))
+                curses.init_pair(20 + apple['color'], apple['color'], -1)
+                stdscr.attron(curses.color_pair(20 + apple['color']))
+                stdscr.addstr(y, x, APPLE_CHAR if not apple.get('special', False) else SPECIAL_APPLE_CHAR)
+                stdscr.attroff(curses.color_pair(20 + apple['color']))
 
             stdscr.attron(curses.color_pair(30))
             for y, x in obstacles:
