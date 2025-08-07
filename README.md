@@ -36,3 +36,7 @@ A Snake game written in Python using `curses`. Dynamic difficulty, sound effects
 ## 💾 Installing
 
 - After building the binary, install to ~/.local/bin and run <pre> ``` pysnake ``` </pre> from terminal.
+
+---
+
+- Made by Takardo
