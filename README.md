@@ -10,6 +10,7 @@ A colorful, interactive Snake game written in Python using the `curses` module. 
 - Speed boost by holding a direction key
 - Pausing with `P`, quitting with `Q` or `Esc`
 - Dynamic difficulty:
+  - Increasing speed with score
   - Increasing apple count with score
   - Obstacles appear as your score increases
 - Colorful randomized apples, snake, and borders
